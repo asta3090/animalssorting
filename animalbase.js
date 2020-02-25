@@ -3,27 +3,127 @@
 window.addEventListener("DOMContentLoaded", start);
 
 let allAnimals = [];
+let currentList = [];
+let winners = [];
 
 // The prototype for all animals:
 const Animal = {
   name: "",
   desc: "-unknown animal-",
   type: "",
-  age: 0
+  age: 0,
+  star: false,
+  winner: false
 };
 
 function start() {
   console.log("ready");
 
-  document.querySelector("body > p > button:nth-child(1)").addEventListener("click", filterCats);
-  document.querySelector("body > p > button:nth-child(2)").addEventListener("click", filterDogs);
-  document.querySelector("body > p > button:nth-child(3)").addEventListener("click", filterAll);
+  // TODO: Add event-listeners to filter and sort buttons
 
-  document.querySelector("#sorting > th:nth-child(1)").addEventListener("click", sortingName);
-  document.querySelector("#sorting > th:nth-child(2)").addEventListener("click", sortingDesc);
-  document.querySelector("#sorting > th:nth-child(3)").addEventListener("click", sortingType);
-  document.querySelector("#sorting > th:nth-child(4)").addEventListener("click", sortingAge);
+  document.querySelector("[data-filter='cat']").addEventListener("click", filterCats);
+  document.querySelector("[data-filter='dog']").addEventListener("click", filterDogs);
+  document.querySelector("[data-filter='all']").addEventListener("click", showAll);
+
+  document.querySelector("[data-sort='name']").addEventListener("click", sortingName);
+  document.querySelector("[data-sort='type']").addEventListener("click", sortingType);
+  document.querySelector("[data-sort='desc']").addEventListener("click", sortingDesc);
+  document.querySelector("[data-sort='age']").addEventListener("click", sortingAge);
+
   loadJSON();
+}
+
+//STJERNER
+
+function setStar(animal) {
+  if (animal.star === true) {
+    animal.star = false;
+  } else {
+    animal.star = true;
+  }
+  console.log(animal.star);
+  displayList(currentList);
+}
+
+//Winner
+//first make new array with animals set to be winners
+//Checks if animal.type and winner.type are the same and store in variable
+//if they are the same animal.winner is false
+//if the animal types are the same you cannot choose that as a winner
+//only one type of animal can be a
+
+function checkWinner(animal) {
+  const winnerType = winners.some(winner => {
+    return winner.type === animal.type;
+  });
+  if (animal.winner === true) {
+    animal.winner = false;
+  } else {
+    if (winnerType) {
+      oneWinnerOfEachType();
+      animal.winner = false;
+    } else if (winners.length == 2) {
+      removeOneAnimal();
+      animal.winner = false;
+    } else {
+      animal.winner = true;
+    }
+  }
+
+  winners = currentList.filter(animal => animal.winner === true);
+  console.log(winners);
+  console.log(animal.winner);
+  displayList(currentList);
+}
+
+function oneWinnerOfEachType() {
+  document.querySelector("#onlyonekind").classList.add("show");
+  document.querySelector("#onlyonekind .closebutton").addEventListener("click", closeDialog);
+
+  document.querySelector("#onlyonekind .animal1").textContent = winners[0].name + winners[0].type;
+}
+
+function removeOneAnimal() {
+  document.querySelector("#onlytwowinners").classList.add("show");
+  document.querySelector("#onlytwowinners .closebutton").addEventListener("click", closeDialog);
+
+  document.querySelector("#onlytwowinners .animal1").textContent = winners[0].name + " " + winners[0].type;
+  document.querySelector("#onlytwowinners .animal2").textContent = winners[1].name + " " + winners[1].type;
+
+  console.log(removeOneAnimal);
+}
+
+function closeDialog() {
+  document.querySelector("#onlyonekind").classList.remove("show");
+  document.querySelector("#onlytwowinners").classList.remove("show");
+}
+
+//Filtering
+
+function filterCats() {
+  currentList = allAnimals.filter(isCat);
+  displayList(currentList);
+}
+
+function filterDogs() {
+  currentList = allAnimals.filter(isDog);
+  displayList(currentList);
+}
+function showAll() {
+  currentList = allAnimals.filter(isAll);
+  displayList(currentList);
+}
+
+function isCat(animal) {
+  return animal.type === "cat";
+}
+
+function isDog(animal) {
+  return animal.type === "dog";
+}
+
+function isAll(animal) {
+  return animal;
 }
 
 async function loadJSON() {
@@ -37,49 +137,7 @@ async function loadJSON() {
 function prepareObjects(jsonData) {
   allAnimals = jsonData.map(preapareObject);
 
-  // TODO: This might not be the function we want to call first - call the filter list
-  displayList(allAnimals);
-}
-
-//Filter
-
-function filterAll() {
-  const All = allAnimals.filter(alle);
-  displayList(All);
-}
-
-function filterCats() {
-  const onlyCats = allAnimals.filter(isCat);
-  displayList(onlyCats);
-}
-
-function filterDogs() {
-  const onlyDogs = allAnimals.filter(isDog);
-  displayList(onlyDogs);
-}
-
-//ALLE
-
-function alle(Animal) {
-  return animal;
-}
-
-//DOGS
-
-function isDog(Animal) {
-  if (Animal.type === "dog") {
-    return true;
-  } else {
-    return false;
-  }
-}
-//CATS
-function isCat(Animal) {
-  if (Animal.type === "cat") {
-    return true;
-  } else {
-    return false;
-  }
+  showAll();
 }
 
 function preapareObject(jsonObject) {
@@ -94,10 +152,6 @@ function preapareObject(jsonObject) {
   return animal;
 }
 
-function filterList() {
-  displayList();
-}
-
 function displayList(animals) {
   // clear the list
   document.querySelector("#list tbody").innerHTML = "";
@@ -110,6 +164,37 @@ function displayAnimal(animal) {
   // create clone
   const clone = document.querySelector("template#animal").content.cloneNode(true);
 
+  //setstar
+
+  let animalStar = clone.querySelector("[data-field=star]");
+
+  if (animal.star === true) {
+    animalStar.textContent = "⭐";
+  } else {
+    animalStar.textContent = "☆";
+  }
+
+  //setwinner
+
+  let animalWinner = clone.querySelector("[data-field=winner]");
+
+  if (animal.winner === true) {
+    clone.querySelector("[data-field=winner]").classList.remove("grayout");
+  } else {
+    clone.querySelector("[data-field=winner]").classList.add("grayout");
+  }
+
+  //star click function
+
+  clone.querySelector("[data-field=star]").addEventListener("click", function() {
+    setStar(animal);
+  });
+
+  //winner click function
+  clone.querySelector("[data-field=winner]").addEventListener("click", function() {
+    checkWinner(animal);
+  });
+
   // set clone data
   clone.querySelector("[data-field=name]").textContent = animal.name;
   clone.querySelector("[data-field=desc]").textContent = animal.desc;
@@ -120,22 +205,37 @@ function displayAnimal(animal) {
   document.querySelector("#list tbody").appendChild(clone);
 }
 
-//SORTING
+//sorting
+
+function sortingName() {
+  const sortName = currentList.sort(compareName);
+  displayList(currentList);
+
+  console.log(sortingName);
+}
+function sortingType() {
+  const sortType = currentList.sort(compareType);
+  displayList(currentList);
+
+  console.log(sortingType);
+}
+function sortingDesc() {
+  const sortDesc = currentList.sort(compareDesc);
+  displayList(currentList);
+
+  console.log(sortingDesc);
+}
+function sortingAge() {
+  const sortAge = currentList.sort(compareAge);
+  displayList(currentList);
+
+  console.log(sortingAge);
+}
 
 function compareName(a, b) {
   if (a.name < b.name) {
     return -1;
   } else if (a.name > b.name) {
-    return -1;
-  } else {
-    return 1;
-  }
-}
-
-function compareDesc(a, b) {
-  if (a.desc < b.desc) {
-    return -1;
-  } else if (a.desc > b.desc) {
     return -1;
   } else {
     return 1;
@@ -152,6 +252,16 @@ function compareType(a, b) {
   }
 }
 
+function compareDesc(a, b) {
+  if (a.desc < b.desc) {
+    return -1;
+  } else if (a.desc > b.desc) {
+    return -1;
+  } else {
+    return 1;
+  }
+}
+
 function compareAge(a, b) {
   if (a.age < b.age) {
     return -1;
@@ -162,22 +272,5 @@ function compareAge(a, b) {
   }
 }
 
-function sortingName() {
-  const sortName = allAnimals.sort(compareName);
-  displayList(sortName);
-}
-
-function sortingDesc() {
-  const sortDesc = allAnimals.sort(compareDesc);
-  displayList(sortDesc);
-}
-
-function sortingType() {
-  const sortType = allAnimals.sort(compareType);
-  displayList(sortType);
-}
-
-function sortingAge() {
-  const sortAge = allAnimals.sort(compareAge);
-  displayList(sortAge);
-}
+currentList.sort(compareName);
+console.log(compareName);
